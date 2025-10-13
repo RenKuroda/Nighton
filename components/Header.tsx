@@ -2,7 +2,11 @@
 import React, { useState } from 'react';
 import { MenuDotsIcon } from './icons';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenMyPage?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onOpenMyPage }) => {
   const [open, setOpen] = useState(false);
   return (
     <header className="py-4 px-6 sticky top-0 bg-[#0c0a1e]/80 backdrop-blur-sm z-10">
@@ -31,7 +35,10 @@ const Header: React.FC = () => {
           <button onClick={() => setOpen(false)} className="p-1 text-slate-400 hover:text-white">閉じる</button>
         </div>
         <nav className="p-2">
-          <a href="#mypage" onClick={() => setOpen(false)} className="block px-3 py-3 text-white rounded-lg hover:bg-slate-800">マイページ</a>
+          <button
+            onClick={() => { setOpen(false); onOpenMyPage && onOpenMyPage(); }}
+            className="block w-full text-left px-3 py-3 text-white rounded-lg hover:bg-slate-800 whitespace-nowrap"
+          >マイページ</button>
         </nav>
       </div>
     </header>

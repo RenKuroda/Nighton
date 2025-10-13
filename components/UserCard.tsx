@@ -43,14 +43,14 @@ const UserCard: React.FC<UserCardProps> = ({ user, onChangeRelationScope }) => {
         <div className="flex items-center gap-2 min-w-0 flex-nowrap">
           <p className="text-white font-semibold text-lg whitespace-nowrap overflow-hidden text-ellipsis">{user.name}</p>
         </div>
-        <div className="mt-2 flex items-center gap-2">
-          <span className={`text-[11px] px-2 py-0.5 rounded-full border ${statusBadgeClasses} shrink-0`}>{user.status === Status.FREE ? '空いてる' : '空いてないかな'}</span>
+        <div className="mt-2 flex items-center gap-2 flex-nowrap overflow-x-auto">
+          <span className={`text-[11px] px-2 py-0.5 rounded-full border ${statusBadgeClasses} shrink-0 whitespace-nowrap`}>{user.status === Status.FREE ? '空いてる' : '空いてないかな'}</span>
           {onChangeRelationScope && (
             <select
               onClick={(e) => e.stopPropagation()}
               value={user.relationScope}
               onChange={(e) => onChangeRelationScope(user.id, e.target.value as Scope)}
-              className="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs px-2 py-1 focus:outline-none"
+              className="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs px-2 py-1 focus:outline-none shrink-0 whitespace-nowrap"
               title="関係を変更"
             >
               <option value={Scope.PRIVATE}>{SCOPE_LABELS[Scope.PRIVATE]}</option>

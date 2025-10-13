@@ -6,6 +6,7 @@ import UserCard from './components/UserCard';
 import AvailabilityModal from './components/AvailabilityModal';
 import StatusDetailModal from './components/StatusDetailModal';
 import MyPage from './components/MyPage';
+import MyPageModal from './components/MyPageModal';
 
 import { MOCK_USERS } from './constants';
 import { Status, Scope, User } from './types';
@@ -19,6 +20,7 @@ const App: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<Status | 'ALL'>(Status.FREE);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
   const [isStatusDetailModalOpen, setIsStatusDetailModalOpen] = useState(false);
+  const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
   const [availableFrom, setAvailableFrom] = useState<string>('');
@@ -92,7 +94,7 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-[#0c0a1e] text-slate-200 min-h-screen font-sans">
-      <Header />
+      <Header onOpenMyPage={() => setIsMyPageOpen(true)} />
       <main className="max-w-md mx-auto p-4 pb-20">
         <StatusSelector
           userStatus={userStatus}
@@ -156,17 +158,17 @@ const App: React.FC = () => {
         users={users}
       />
 
-      {/* My Page (anchor target) */}
-      <section id="mypage" className="max-w-md mx-auto px-4 py-8">
-        <MyPage
-          initialTime={availableFrom}
-          initialMessage={userMessage}
-          onSave={(t, m) => {
-            setAvailableFrom(t);
-            setUserMessage(m);
-          }}
-        />
-      </section>
+      <MyPageModal
+        isOpen={isMyPageOpen}
+        onClose={() => setIsMyPageOpen(false)}
+        initialTime={availableFrom}
+        initialMessage={userMessage}
+        onSave={(t, m) => {
+          setAvailableFrom(t);
+          setUserMessage(m);
+          setIsMyPageOpen(false);
+        }}
+      />
 
       <StatusDetailModal
         isOpen={isStatusDetailModalOpen}

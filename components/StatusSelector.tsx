@@ -17,7 +17,7 @@ const StatusSelector: React.FC<StatusSelectorProps> = ({ userStatus, onSetFree, 
         <h2 className="text-xl font-bold text-white">今夜、空いてますか？</h2>
         <p className="text-slate-400 text-sm">ワンタップで状況を共有しよう</p>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 whitespace-nowrap">
         <button
           onClick={onSetBusy}
           className={`font-bold py-3.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors duration-300 transform hover:scale-105
