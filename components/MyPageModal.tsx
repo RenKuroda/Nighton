@@ -1,12 +1,13 @@
 import React from 'react';
 import MyPage from './MyPage';
+import { DefaultStatus } from '../types';
 
 interface MyPageModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTime: string;
   initialMessage: string;
-  onSave: (time: string, message: string) => void;
+  onSave: (payload: { time: string; message: string; name: string; avatarUrl?: string; avatarColor?: string; defaultStatus: DefaultStatus }) => void;
 }
 
 const MyPageModal: React.FC<MyPageModalProps> = ({ isOpen, onClose, initialTime, initialMessage, onSave }) => {

@@ -9,7 +9,7 @@ import MyPage from './components/MyPage';
 import MyPageModal from './components/MyPageModal';
 
 import { MOCK_USERS } from './constants';
-import { Status, Scope, User } from './types';
+import { Status, Scope, User, AppSettings } from './types';
 
 // AI機能は利用しないため削除
 
@@ -26,6 +26,14 @@ const App: React.FC = () => {
   const [availableFrom, setAvailableFrom] = useState<string>('');
   const [shareScope, setShareScope] = useState<Scope | null>(null);
   const [shareRecipientIds, setShareRecipientIds] = useState<string[] | null>(null);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  React.useEffect(() => {
+    try {
+      const s = localStorage.getItem('nighton_settings');
+      if (s) setSettings(JSON.parse(s));
+    } catch {}
+  }, []);
 
   const handleSetFree = () => {
     setIsAvailabilityModalOpen(true);
@@ -161,11 +169,20 @@ const App: React.FC = () => {
       <MyPageModal
         isOpen={isMyPageOpen}
         onClose={() => setIsMyPageOpen(false)}
-        initialTime={availableFrom}
+        initialTime={(settings?.defaultTime || availableFrom) as string}
         initialMessage={userMessage}
-        onSave={(t, m) => {
-          setAvailableFrom(t);
-          setUserMessage(m);
+        onSave={({ time, message, name, avatarUrl, avatarColor, defaultStatus }) => {
+          setAvailableFrom(time);
+          setUserMessage(message);
+          const newSettings: AppSettings = {
+            displayName: name,
+            avatarUrl,
+            avatarColor,
+            defaultTime: time,
+            defaultStatus,
+          };
+          setSettings(newSettings);
+          try { localStorage.setItem('nighton_settings', JSON.stringify(newSettings)); } catch {}
           setIsMyPageOpen(false);
         }}
       />
