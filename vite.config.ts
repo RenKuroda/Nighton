@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
     return {
       base: process.env.GITHUB_PAGES ? '/Nighton/' : '/',
       server: {
-        port: 3000,
+        port: Number(env.PORT || 5174),
         host: '0.0.0.0',
       },
       plugins: [react()],

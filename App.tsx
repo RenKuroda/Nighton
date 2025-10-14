@@ -19,6 +19,7 @@ const App: React.FC = () => {
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [statusFilter, setStatusFilter] = useState<Status | 'ALL'>(Status.FREE);
   const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isStatusDetailModalOpen, setIsStatusDetailModalOpen] = useState(false);
   const [isMyPageOpen, setIsMyPageOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -102,8 +103,32 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-[#0c0a1e] text-slate-200 min-h-screen font-sans">
-      <Header onOpenMyPage={() => setIsMyPageOpen(true)} />
-      <main className="max-w-md mx-auto p-4 pb-20">
+      <Header onOpenMenu={() => setIsMenuOpen(true)} />
+      {/* Backdrop for global menu */}
+      <div
+        onClick={() => setIsMenuOpen(false)}
+        className={`fixed inset-0 z-40 transition-opacity backdrop-blur-sm ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        style={{ backgroundColor: 'rgba(140, 144, 150, 0.55)' }}
+        aria-hidden={!isMenuOpen}
+      />
+      {/* Slide-in drawer */}
+      <aside
+        className={`fixed top-0 right-0 z-50 h-full w-1/2 max-w-sm bg-[#0c0a1e] shadow-2xl border-l border-slate-800 transform transition-transform duration-300 ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        role="dialog" aria-modal="true" aria-label="メニュー"
+      >
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between sticky top-0 bg-[#0c0a1e]">
+          <span className="text-white font-semibold">メニュー</span>
+          <button onClick={() => setIsMenuOpen(false)} className="p-1 text-slate-400 hover:text-white">閉じる</button>
+        </div>
+        <nav className="p-2">
+          <button
+            onClick={() => { setIsMenuOpen(false); setIsMyPageOpen(true); }}
+            className="block w-full text-left px-3 py-3 text-white rounded-lg hover:bg-slate-800 whitespace-nowrap"
+          >マイページ</button>
+        </nav>
+      </aside>
+
+      <main className="max-w-md mx-auto p-4 pb-20 relative z-0">
         <StatusSelector
           userStatus={userStatus}
           onSetFree={handleSetFree}
