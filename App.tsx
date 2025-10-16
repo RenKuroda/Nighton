@@ -519,7 +519,17 @@ const App: React.FC = () => {
         const { supabase } = await import('./utils/supabase');
         const rawIds = friendAccountIds;
         const aids = Array.isArray(rawIds) ? rawIds.filter(Boolean).map(String) : [String(rawIds as any)];
-        const useAids = (aids && aids.length > 0) ? aids : (lastAidsRef.current || []);
+        let useAids = (aids && aids.length > 0) ? aids : (lastAidsRef.current || []);
+        // Fallback: if still empty, derive from current list (best-effort) excluding self
+        if (!useAids || useAids.length === 0 || (useAids.length === 1 && !useAids[0])) {
+          try {
+            const selfIdDbg = settings?.accountId ? String(settings.accountId).toUpperCase() : '';
+            const derived = usersRef.current
+              .map((u: any) => (u && u.accountId ? String(u.accountId).toUpperCase() : ''))
+              .filter((id: string) => !!id && id !== selfIdDbg);
+            if (derived.length > 0) useAids = derived;
+          } catch {}
+        }
         try { console.log('[poll][aids]', useAids); } catch {}
         if (!useAids || useAids.length === 0 || (useAids.length === 1 && !useAids[0])) {
           try { console.log('[poll][skip] no aids'); } catch {}
@@ -604,6 +614,11 @@ const App: React.FC = () => {
               return pref as Scope;
             } catch { return u.relationScope; }
           })();
+          const isVisibleByScope = !incomingScope || incomingScope === 'PUBLIC' || (incomingScope === 'COMMUNITY' && (viewerRelation === Scope.COMMUNITY || viewerRelation === Scope.PRIVATE)) || (incomingScope === 'PRIVATE' && viewerRelation === Scope.PRIVATE);
+          const recipientGate = (incomingScope === 'PRIVATE')
+            ? (viewerRelation === Scope.PRIVATE) // PRIVATEは近しい友人のみ可視（visible_toは無視）
+            : ((Array.isArray(list) && list.length > 0) ? isExplicitAllowed : true);
+          const isVisible = isVisibleByScope && recipientGate;
           try {
             console.log('[vis][poll]', {
               aid,
@@ -620,11 +635,6 @@ const App: React.FC = () => {
               isVisible,
             });
           } catch {}
-          const isVisibleByScope = !incomingScope || incomingScope === 'PUBLIC' || (incomingScope === 'COMMUNITY' && (viewerRelation === Scope.COMMUNITY || viewerRelation === Scope.PRIVATE)) || (incomingScope === 'PRIVATE' && viewerRelation === Scope.PRIVATE);
-          const recipientGate = (incomingScope === 'PRIVATE')
-            ? (viewerRelation === Scope.PRIVATE) // PRIVATEは近しい友人のみ可視（visible_toは無視）
-            : ((Array.isArray(list) && list.length > 0) ? isExplicitAllowed : true);
-          const isVisible = isVisibleByScope && recipientGate;
           const nextStatus = isVisible ? (r.status === 'FREE' ? Status.FREE : Status.BUSY) : Status.BUSY;
           const nextAvailableStr = isVisible && nextStatus === Status.FREE
             ? ((typeof r.available_from === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(r.available_from)) ? r.available_from.slice(0,5) : (r.available_from || ''))
