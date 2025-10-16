@@ -591,7 +591,8 @@ const App: React.FC = () => {
             });
           } catch {}
           const isVisibleByScope = !incomingScope || incomingScope === 'PUBLIC' || (incomingScope === 'COMMUNITY' && (viewerRelation === Scope.COMMUNITY || viewerRelation === Scope.PRIVATE)) || (incomingScope === 'PRIVATE' && viewerRelation === Scope.PRIVATE);
-          const isVisible = isExplicitAllowed || isVisibleByScope;
+          const recipientGate = (Array.isArray(list) && list.length > 0) ? isExplicitAllowed : true;
+          const isVisible = isVisibleByScope && recipientGate;
           const nextStatus = isVisible ? (r.status === 'FREE' ? Status.FREE : Status.BUSY) : Status.BUSY;
           const nextAvailableStr = isVisible && nextStatus === Status.FREE
             ? ((typeof r.available_from === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(r.available_from)) ? r.available_from.slice(0,5) : (r.available_from || ''))
@@ -712,7 +713,8 @@ const App: React.FC = () => {
                 } catch { return u.relationScope; }
               })();
               const isVisibleByScope2 = !incomingScope2 || incomingScope2 === 'PUBLIC' || (incomingScope2 === 'COMMUNITY' && (viewerRelation2 === Scope.COMMUNITY || viewerRelation2 === Scope.PRIVATE)) || (incomingScope2 === 'PRIVATE' && viewerRelation2 === Scope.PRIVATE);
-              const isVisible2 = isExplicitAllowed2 || isVisibleByScope2;
+              const recipientGate2 = (Array.isArray(list2) && list2.length > 0) ? isExplicitAllowed2 : true;
+              const isVisible2 = isVisibleByScope2 && recipientGate2;
               try {
                 console.log('[vis][rt]', {
                   aid: aidNew,
