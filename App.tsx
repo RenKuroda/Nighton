@@ -429,11 +429,8 @@ const App: React.FC = () => {
     const byStatus = sourceUsers.filter(u => {
       if (statusFilter === 'ALL') return true;
       if (statusFilter === Status.FREE) {
-        // FREEのみ or 近しい友人は表示を維持（BUSY/UNSETでも残す）
-        return (
-          u.status === Status.FREE ||
-          (u.relationScope === Scope.PRIVATE && (u.status === Status.BUSY || u.status === Status.UNSET))
-        );
+        // 厳格にFREEのみ表示（混乱を避ける）
+        return u.status === Status.FREE;
       }
       // Treat UNSET as BUSY for filtering
       if (statusFilter === Status.BUSY) return u.status === Status.BUSY || u.status === Status.UNSET;
