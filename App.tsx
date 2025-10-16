@@ -903,11 +903,43 @@ const App: React.FC = () => {
       const target = usersRef.current.find(u => u.id === userId);
       const aid = (target as any)?.accountId as string | undefined;
       if (aid) {
+        // 一度削除してから上書き（キャッシュの不整合を確実に排除）
+        try { delete map[aid]; } catch {}
         map[aid] = { relationScope: newScope };
         localStorage.setItem('nighton_relations', JSON.stringify(map));
       }
     } catch {}
   }, []);
+
+  // nighton_relations の簡易メンテ関数をデバッグ用に公開（必要に応じて実行可）
+  React.useEffect(() => {
+    try {
+      (window as any).Nighton = (window as any).Nighton || {};
+      (window as any).Nighton.resetRelationCache = (accountId?: string) => {
+        try {
+          if (!accountId) { localStorage.removeItem('nighton_relations'); return true; }
+          const raw = localStorage.getItem('nighton_relations');
+          const map = raw ? JSON.parse(raw) : {};
+          delete map[String(accountId).toUpperCase()];
+          localStorage.setItem('nighton_relations', JSON.stringify(map));
+          return true;
+        } catch { return false; }
+      };
+    } catch {}
+  }, []);
+
+  // users の変更に合わせて、存在しない相手の古いキャッシュを自動で掃除
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('nighton_relations');
+      if (!raw) return;
+      const map = JSON.parse(raw) as Record<string, { relationScope?: Scope }>;
+      const valid = new Set<string>(usersRef.current.map((u: any) => String(u.accountId || '').toUpperCase()).filter(Boolean));
+      let touched = false;
+      Object.keys(map).forEach(k => { if (!valid.has(String(k).toUpperCase())) { delete map[k]; touched = true; } });
+      if (touched) localStorage.setItem('nighton_relations', JSON.stringify(map));
+    } catch {}
+  }, [users.length]);
 
   return (
     <div className="bg-[#0c0a1e] text-slate-200 min-h-screen font-sans">
