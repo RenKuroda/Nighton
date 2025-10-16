@@ -7,22 +7,73 @@ interface AvailabilityModalProps {
   onClose: () => void;
   onSave: (time: string, message: string, scope: Scope, recipientUserIds: string[]) => void;
   users: User[];
+  defaultTime?: string;
+  defaultShareScope?: Scope;
 }
 
-const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, onSave, users }) => {
+const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, onSave, users, defaultTime, defaultShareScope }) => {
   const [time, setTime] = useState('19:00');
   const [message, setMessage] = useState('');
   const [selectedScope, setSelectedScope] = useState<Scope>(Scope.COMMUNITY);
+  // Store selected ids as account_id (UPPERCASE)
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setTime('19:00');
+      // initialize only when opening (or defaultTime changes),
+      // do NOT reset on users change to avoid selection reverting to 19:00
       setMessage('');
-      setSelectedScope(Scope.COMMUNITY);
-      setSelectedUserIds(users.map(u => u.id));
+      // Try to hydrate previously saved visible_to/shared_with from server (and scope/time)
+      (async () => {
+        try {
+          setLoadingSaved(true);
+          const selfRaw = localStorage.getItem('nighton_settings');
+          const self = selfRaw ? JSON.parse(selfRaw) as { accountId?: string } : null;
+          if (self?.accountId) {
+            const { supabase, readNightonDefaults } = await import('../utils/supabase');
+            const { data: urow } = await supabase
+              .from('users')
+              .select('available_from,share_scope,visible_to')
+              .eq('account_id', self.accountId)
+              .maybeSingle();
+            const defaults = await readNightonDefaults(self.accountId);
+
+            // Priority: users -> nighton_settings -> fallback
+            let initTime = (urow?.available_from as any) || (defaults?.default_available_from as any) || (defaultTime || '19:00');
+            if (typeof initTime === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(initTime)) {
+              initTime = initTime.slice(0, 5);
+            }
+            setTime(initTime || '19:00');
+            const initScope = (urow?.share_scope as any) || (defaults?.default_share_scope as any) || (defaultShareScope || Scope.COMMUNITY);
+            setSelectedScope(initScope);
+
+            const savedList: string[] | null = (urow?.visible_to as any) || (defaults?.shared_with as any) || null;
+            if (savedList && savedList.length > 0) {
+              // keep as account_id uppercase
+              setSelectedUserIds(savedList.map((x: any) => String(x).toUpperCase()));
+              return;
+            }
+          }
+        } catch {}
+        finally { setLoadingSaved(false); }
+        // fallback: all checked（accountId があれば accountId、なければ id）
+        setSelectedScope(defaultShareScope || Scope.COMMUNITY);
+        let fallbackTime = defaultTime || '19:00';
+        if (typeof fallbackTime === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(fallbackTime)) fallbackTime = fallbackTime.slice(0,5);
+        setTime(fallbackTime);
+        setSelectedUserIds(users.map(u => String(((u as any).accountId || u.id)).toUpperCase()));
+      })();
     }
-  }, [isOpen, users]);
+  }, [isOpen, defaultTime, defaultShareScope]);
+
+  // Ensure time follows defaultTime updates even if triggered after mount
+  useEffect(() => {
+    if (!isOpen) return;
+    let t = defaultTime || '19:00';
+    if (typeof t === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(t)) t = t.slice(0,5);
+    setTime(t);
+  }, [defaultTime]);
 
   const timeOptions = useMemo(() => {
     const options: string[] = [];
@@ -121,21 +172,31 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
                   if (selectedScope === Scope.COMMUNITY) return u.relationScope === Scope.COMMUNITY || u.relationScope === Scope.PRIVATE;
                   return u.relationScope === Scope.PRIVATE;
                 })
-                .map(u => (
-                <label key={u.id} className="flex items-center gap-3 p-2 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/40">
-                  <input
-                    type="checkbox"
-                    checked={selectedUserIds.includes(u.id)}
-                    onChange={(e) => {
-                      setSelectedUserIds(prev => e.target.checked ? Array.from(new Set([...prev, u.id])) : prev.filter(id => id !== u.id));
-                    }}
-                    className="accent-purple-500"
-                  />
-                  <img src={u.avatarUrl} alt={u.name} className="w-8 h-8 rounded-full border border-slate-700" />
-                  <span className="text-white text-sm font-medium truncate">{u.name}</span>
-                  <span className="ml-auto text-slate-400 text-xs truncate">{u.community}</span>
-                </label>
-              ))}
+                .map(u => {
+                  const aid = String(((u as any).accountId || u.id)).toUpperCase();
+                  const isChecked = selectedUserIds.includes(aid);
+                  return (
+                    <label key={u.id} className={`flex items-center gap-3 p-2 rounded-lg border transition-colors ${isChecked ? 'border-purple-500 bg-purple-500/10' : 'border-slate-800 hover:border-slate-700 bg-slate-900/40'}`}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          setSelectedUserIds(prev => {
+                            if (e.target.checked) {
+                              return [...new Set([...prev, aid])];
+                            } else {
+                              return prev.filter(id => id !== aid);
+                            }
+                          });
+                        }}
+                        className="accent-purple-500"
+                      />
+                      <img src={u.avatarUrl} alt={u.name} className="w-8 h-8 rounded-full border border-slate-700" />
+                      <span className="text-white text-sm font-medium truncate">{u.name}</span>
+                      <span className="ml-auto text-slate-400 text-xs truncate">{u.community}</span>
+                    </label>
+                  );
+                })}
             </div>
           </div>
         </div>

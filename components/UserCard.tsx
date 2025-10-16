@@ -25,6 +25,17 @@ const UserCard: React.FC<UserCardProps> = ({ user, onChangeRelationScope }) => {
     return last.getTime() >= startOfToday ? 'today' : 'older';
   })();
 
+  const formatTime = (t?: string) => {
+    if (!t) return '';
+    const parts = t.split(':');
+    if (parts.length >= 2) {
+      const hh = parts[0].padStart(2, '0');
+      const mm = parts[1].padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+    return t;
+  };
+
   return (
     <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex items-center gap-4 transition-transform duration-300 hover:bg-slate-800/50 cursor-pointer hover:border-slate-700">
       <div className="relative flex-shrink-0">
@@ -63,12 +74,13 @@ const UserCard: React.FC<UserCardProps> = ({ user, onChangeRelationScope }) => {
       </div>
       <div className="flex items-center gap-3 flex-shrink-0 ml-2">
         <div className="flex flex-col items-end">
-          {user.availableFrom && (
+          {user.status === Status.FREE && user.availableFrom && (
             <div className="flex flex-col items-center text-amber-400">
               <ClockIcon className="w-5 h-5 mb-0.5" />
-              <span className="text-lg font-bold">{user.availableFrom}~</span>
+              <span className="text-lg font-bold">{formatTime(user.availableFrom)}~</span>
             </div>
           )}
+          {/* scope label hidden because dropdown indicates scope */}
           <span className="text-[11px] text-slate-400 mt-1">
             最終ログイン: <span className={loginLabel === 'today' ? 'text-emerald-300' : 'text-slate-400'}>{loginLabel}</span>
           </span>
@@ -78,4 +90,12 @@ const UserCard: React.FC<UserCardProps> = ({ user, onChangeRelationScope }) => {
   );
 };
 
-export default UserCard;
+export default React.memo(UserCard, (prev, next) => {
+  return (
+    prev.user.status === next.user.status &&
+    (prev.user.availableFrom || '') === (next.user.availableFrom || '') &&
+    prev.user.name === next.user.name &&
+    prev.user.relationScope === next.user.relationScope &&
+    prev.user.avatarUrl === next.user.avatarUrl
+  );
+});

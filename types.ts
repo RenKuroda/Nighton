@@ -12,6 +12,8 @@ export enum Scope {
 
 export interface User {
   id: string;
+  // Public-facing account identifier used for search/add
+  accountId?: string;
   name: string;
   avatarUrl: string;
   status: Status;
@@ -32,4 +34,8 @@ export interface AppSettings {
   avatarColor?: string; // fallback color circle
   defaultTime: string; // e.g. '19:00'
   defaultStatus: DefaultStatus;
+  // Stable random identifier for this account (shown in MyPage)
+  accountId?: string;
+  // default share scope for availability (optional, used as initial for share)
+  defaultShareScope?: Scope;
 }
