@@ -668,6 +668,7 @@ const App: React.FC = () => {
         // update filter ref (handler will read current set)
         acceptedIdsRef.current = ids;
         if (friendsPresenceChannelRef.current) return; // already subscribed
+        // Subscribe globally (no row filter) and filter in handler for robustness across reconnects
         friendsPresenceChannelRef.current = supabase.channel('presence-friends');
         try { console.log('[realtime][init] ids', Array.from(acceptedIdsRef.current)); } catch {}
         const handler = (payload: any) => {
@@ -675,7 +676,7 @@ const App: React.FC = () => {
           const r = payload.new || {};
           const aidNew = r.account_id as string | undefined;
           try { console.log('[realtime][users.update] aid', aidNew, r); } catch {}
-          if (!aidNew || !acceptedIdsRef.current.has(aidNew)) return; // 自分の承認済み相手以外は無視
+          if (!aidNew) return;
           // Previously muted realtime immediately after polling to avoid flicker.
           // Coalescing now handles duplicates, so do not early-return here.
           setUsers(prev => {
