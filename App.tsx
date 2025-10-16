@@ -598,8 +598,13 @@ const App: React.FC = () => {
             : '';
           const prevAvailableStr = (u.availableFrom || '');
           const derived = { status: nextStatus, timeHHMM: nextAvailableStr, scope: incomingScope || null, visibleTo: (r.visible_to || []).map((x: any) => String(x).toUpperCase()) };
-          if (!shouldApply(aid, r, derived)) {
-            return u;
+          const should = shouldApply(aid, r, derived);
+          if (!should) {
+            if (u.status !== nextStatus || prevAvailableStr !== nextAvailableStr) {
+              try { console.log('[coalesce][override][poll]', aid, { from: { s: u.status, t: prevAvailableStr }, to: { s: nextStatus, t: nextAvailableStr } }); } catch {}
+            } else {
+              return u;
+            }
           }
             // Avoid unnecessary rerenders if nothing changed
           const tsDiff = (newTs && prevTs) ? Math.abs(newTs - prevTs) : 0;
@@ -736,9 +741,14 @@ const App: React.FC = () => {
                 });
               } catch {}
               const derived2 = { status: nextStatus, timeHHMM: nextAvailStr, scope: incomingScope2 || null, visibleTo: (r.visible_to || []).map((x: any) => String(x).toUpperCase()) };
-              if (!shouldApply(aidNew || '', r, derived2)) {
-                try { console.log('[realtime][skip]', { aid: aidNew, reason: 'shouldApply=false', lastApplied: lastAppliedAtByAidRef.current.get(aidNew || ''), rUpdatedAt: r.updated_at }); } catch {}
-                return u;
+              const should2 = shouldApply(aidNew || '', r, derived2);
+              if (!should2) {
+                if (u.status !== nextStatus || prevAvailStr !== nextAvailStr) {
+                  try { console.log('[coalesce][override][rt]', aidNew, { from: { s: u.status, t: prevAvailStr }, to: { s: nextStatus, t: nextAvailStr } }); } catch {}
+                } else {
+                  try { console.log('[realtime][skip]', { aid: aidNew, reason: 'shouldApply=false', lastApplied: lastAppliedAtByAidRef.current.get(aidNew || ''), rUpdatedAt: r.updated_at }); } catch {}
+                  return u;
+                }
               }
               const tsDiff = (newTs && prevTs) ? Math.abs(newTs - prevTs) : 0;
               if (u.status === nextStatus && prevAvailStr === nextAvailStr && tsDiff < 1500) {
