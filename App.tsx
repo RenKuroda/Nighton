@@ -591,9 +591,17 @@ const App: React.FC = () => {
           const isExplicitAllowed = !!viewerId && list.map((x: any) => String(x).toUpperCase()).includes(viewerId);
           const viewerRelation = (() => {
             try {
-              const rel = JSON.parse(localStorage.getItem('nighton_relations') || '{}');
+              const relRaw = localStorage.getItem('nighton_relations');
+              const rel = relRaw ? JSON.parse(relRaw) : {};
               const rc = rel[aid]?.relationScope as Scope | undefined;
-              return rc || u.relationScope;
+              // Prefer UI state over localStorage (avoid stale local cache)
+              const pref = u.relationScope || rc;
+              if (pref && rc && pref !== rc) {
+                // sync back to storage to prevent flip-flop
+                rel[aid] = { relationScope: pref };
+                localStorage.setItem('nighton_relations', JSON.stringify(rel));
+              }
+              return pref as Scope;
             } catch { return u.relationScope; }
           })();
           try {
@@ -725,9 +733,15 @@ const App: React.FC = () => {
               const isExplicitAllowed2 = !!viewerId2 && list2.map((x: any) => String(x).toUpperCase()).includes(viewerId2);
               const viewerRelation2 = (() => {
                 try {
-                  const rel = JSON.parse(localStorage.getItem('nighton_relations') || '{}');
+                  const relRaw = localStorage.getItem('nighton_relations');
+                  const rel = relRaw ? JSON.parse(relRaw) : {};
                   const rc = rel[aid]?.relationScope as Scope | undefined;
-                  return rc || u.relationScope;
+                  const pref = u.relationScope || rc;
+                  if (pref && rc && pref !== rc) {
+                    rel[aid] = { relationScope: pref };
+                    localStorage.setItem('nighton_relations', JSON.stringify(rel));
+                  }
+                  return pref as Scope;
                 } catch { return u.relationScope; }
               })();
               const isVisibleByScope2 = !incomingScope2 || incomingScope2 === 'PUBLIC' || (incomingScope2 === 'COMMUNITY' && (viewerRelation2 === Scope.COMMUNITY || viewerRelation2 === Scope.PRIVATE)) || (incomingScope2 === 'PRIVATE' && viewerRelation2 === Scope.PRIVATE);
