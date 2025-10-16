@@ -617,7 +617,9 @@ const App: React.FC = () => {
             });
           } catch {}
           const isVisibleByScope = !incomingScope || incomingScope === 'PUBLIC' || (incomingScope === 'COMMUNITY' && (viewerRelation === Scope.COMMUNITY || viewerRelation === Scope.PRIVATE)) || (incomingScope === 'PRIVATE' && viewerRelation === Scope.PRIVATE);
-          const recipientGate = (Array.isArray(list) && list.length > 0) ? isExplicitAllowed : true;
+          const recipientGate = (incomingScope === 'PRIVATE')
+            ? true // PRIVATEではvisible_toは可視範囲を広げない（近しい友人のみ）
+            : ((Array.isArray(list) && list.length > 0) ? isExplicitAllowed : true);
           const isVisible = isVisibleByScope && recipientGate;
           const nextStatus = isVisible ? (r.status === 'FREE' ? Status.FREE : Status.BUSY) : Status.BUSY;
           const nextAvailableStr = isVisible && nextStatus === Status.FREE
@@ -745,7 +747,9 @@ const App: React.FC = () => {
                 } catch { return u.relationScope; }
               })();
               const isVisibleByScope2 = !incomingScope2 || incomingScope2 === 'PUBLIC' || (incomingScope2 === 'COMMUNITY' && (viewerRelation2 === Scope.COMMUNITY || viewerRelation2 === Scope.PRIVATE)) || (incomingScope2 === 'PRIVATE' && viewerRelation2 === Scope.PRIVATE);
-              const recipientGate2 = (Array.isArray(list2) && list2.length > 0) ? isExplicitAllowed2 : true;
+              const recipientGate2 = (incomingScope2 === 'PRIVATE')
+                ? true
+                : ((Array.isArray(list2) && list2.length > 0) ? isExplicitAllowed2 : true);
               const isVisible2 = isVisibleByScope2 && recipientGate2;
               try {
                 console.log('[vis][rt]', {
@@ -756,7 +760,8 @@ const App: React.FC = () => {
                   viewerId: viewerId2,
                   rStatus: r.status,
                   rTime: r.available_from,
-                  rUpdatedAt: r.updated_at,
+              rUpdatedAt: r.updated_at,
+              listLen: Array.isArray(list2) ? list2.length : 0,
                 });
               } catch {}
               const nextStatus = isVisible2 ? ((typeof r.status === 'string') ? (r.status === 'FREE' ? Status.FREE : Status.BUSY) : u.status) : Status.BUSY;
