@@ -19,6 +19,12 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [loadingSaved, setLoadingSaved] = useState(false);
 
+  const isAllowedForScope = React.useCallback((u: User, scope: Scope) => {
+    if (scope === Scope.PUBLIC) return true;
+    if (scope === Scope.COMMUNITY) return u.relationScope === Scope.COMMUNITY || u.relationScope === Scope.PRIVATE;
+    return u.relationScope === Scope.PRIVATE;
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       // initialize only when opening (or defaultTime changes),
@@ -50,8 +56,13 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
 
             const savedList: string[] | null = (urow?.visible_to as any) || (defaults?.shared_with as any) || null;
             if (savedList && savedList.length > 0) {
-              // keep as account_id uppercase
-              setSelectedUserIds(savedList.map((x: any) => String(x).toUpperCase()));
+              const allowedAids = new Set(
+                users
+                  .filter(u => isAllowedForScope(u, initScope))
+                  .map(u => String(((u as any).accountId || u.id)).toUpperCase())
+              );
+              const normalized = savedList.map((x: any) => String(x).toUpperCase()).filter(id => allowedAids.has(id));
+              setSelectedUserIds(normalized);
               return;
             }
           }
@@ -62,7 +73,12 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
         let fallbackTime = defaultTime || '19:00';
         if (typeof fallbackTime === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(fallbackTime)) fallbackTime = fallbackTime.slice(0,5);
         setTime(fallbackTime);
-        setSelectedUserIds(users.map(u => String(((u as any).accountId || u.id)).toUpperCase()));
+        const allowedAids = new Set(
+          users
+            .filter(u => isAllowedForScope(u, defaultShareScope || Scope.COMMUNITY))
+            .map(u => String(((u as any).accountId || u.id)).toUpperCase())
+        );
+        setSelectedUserIds(Array.from(allowedAids));
       })();
     }
   }, [isOpen, defaultTime, defaultShareScope]);
@@ -74,6 +90,19 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
     if (typeof t === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(t)) t = t.slice(0,5);
     setTime(t);
   }, [defaultTime]);
+
+  // When scope changes, prune selection to allowed recipients for the scope
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedUserIds(prev => {
+      const allowed = new Set(
+        users
+          .filter(u => isAllowedForScope(u, selectedScope))
+          .map(u => String(((u as any).accountId || u.id)).toUpperCase())
+      );
+      return prev.filter(id => allowed.has(id));
+    });
+  }, [selectedScope, users, isOpen, isAllowedForScope]);
 
   const timeOptions = useMemo(() => {
     const options: string[] = [];
@@ -164,14 +193,7 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
             <label className="block text-slate-300 text-sm mb-2">共有する相手（チェックで選択）</label>
             <div className="max-h-56 overflow-auto space-y-2 pr-1">
               {users
-                .filter(u => {
-                  // 知人(PUBLIC) => PUBLIC/COMMUNITY/PRIVATE すべて表示
-                  // 友人(COMMUNITY) => COMMUNITY/PRIVATE を表示
-                  // 近しい友人(PRIVATE) => PRIVATE のみ表示
-                  if (selectedScope === Scope.PUBLIC) return true;
-                  if (selectedScope === Scope.COMMUNITY) return u.relationScope === Scope.COMMUNITY || u.relationScope === Scope.PRIVATE;
-                  return u.relationScope === Scope.PRIVATE;
-                })
+                .filter(u => isAllowedForScope(u, selectedScope))
                 .map(u => {
                   const aid = String(((u as any).accountId || u.id)).toUpperCase();
                   const isChecked = selectedUserIds.includes(aid);
