@@ -552,8 +552,10 @@ const App: React.FC = () => {
           const aid = (u as any).accountId as string | undefined;
           if (!aid) return u;
           if (selfId && String(aid).toUpperCase() === selfId) return u; // 自分はpollで更新しない
-          if (!map.has(aid)) return u;
-          const r = map.get(aid);
+          // compare in uppercase for robustness
+          const hasRow = Array.from(map.keys()).some((k: any) => String(k).toUpperCase() === String(aid).toUpperCase());
+          if (!hasRow) return u;
+          const r = map.get(aid) || map.get(Array.from(map.keys()).find((k: any) => String(k).toUpperCase() === String(aid).toUpperCase()) as any);
           // guard: ignore stale updates
           const prevTs = (u as any).presenceUpdatedAt ? new Date((u as any).presenceUpdatedAt).getTime() : 0;
           const newTs = r.updated_at ? new Date(r.updated_at).getTime() : 0;
@@ -725,6 +727,7 @@ const App: React.FC = () => {
               if (typeof nextAvailable === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(nextAvailable)) nextAvailable = nextAvailable.slice(0,5);
               const prevAvailStr = (u.availableFrom || '');
               const nextAvailStr = (nextStatus === Status.FREE) ? (nextAvailable || '') : '';
+              try { console.log('[merge][rt]', aidNew, u.status, '→', nextStatus, '|', prevAvailStr, '→', nextAvailStr); } catch {}
               try {
                 console.log('[realtime][pre-check]', {
                   aid: aidNew,
@@ -740,7 +743,10 @@ const App: React.FC = () => {
                 return u;
               }
               const tsDiff = (newTs && prevTs) ? Math.abs(newTs - prevTs) : 0;
-              if (u.status === nextStatus && prevAvailStr === nextAvailStr && tsDiff < 1500) return u;
+              if (u.status === nextStatus && prevAvailStr === nextAvailStr && tsDiff < 1500) {
+                try { console.log('[merge][rt][skip same]', aidNew, { status: u.status, avail: prevAvailStr, tsDiff }); } catch {}
+                return u;
+              }
               const merged: User = {
                 id: u.id,
                 name: r.name || u.name,
