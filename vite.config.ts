@@ -39,6 +39,23 @@ export default defineConfig(({ mode }) => {
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
           ''
       ),
+
+      // ✅ Auth0（Vercel の環境変数も拾う）
+      'import.meta.env.VITE_AUTH0_DOMAIN': JSON.stringify(
+        env.VITE_AUTH0_DOMAIN || process.env.VITE_AUTH0_DOMAIN || ''
+      ),
+      'import.meta.env.VITE_AUTH0_CLIENT_ID': JSON.stringify(
+        env.VITE_AUTH0_CLIENT_ID || process.env.VITE_AUTH0_CLIENT_ID || ''
+      ),
+      'import.meta.env.VITE_AUTH0_AUDIENCE': JSON.stringify(
+        env.VITE_AUTH0_AUDIENCE || process.env.VITE_AUTH0_AUDIENCE || ''
+      ),
+      'import.meta.env.VITE_AUTH0_REDIRECT_URI': JSON.stringify(
+        env.VITE_AUTH0_REDIRECT_URI || process.env.VITE_AUTH0_REDIRECT_URI || ''
+      ),
+      'import.meta.env.VITE_AUTH0_LOGOUT_URI': JSON.stringify(
+        env.VITE_AUTH0_LOGOUT_URI || process.env.VITE_AUTH0_LOGOUT_URI || ''
+      ),
     },
 
     resolve: {
@@ -52,5 +69,8 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       emptyOutDir: true,
     },
+
+    // ✅ SPAルーティングでの依存解決を安定化（/callback などを index.html にフォールバックさせる想定）
+    optimizeDeps: {},
   }
 })
