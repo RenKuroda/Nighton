@@ -387,6 +387,24 @@ const App: React.FC = () => {
       try {
         const { supabase, upsertNightonDefaults } = await import('./utils/supabase');
         if (!settings?.accountId) return;
+        // Enforce scope on recipients: visible_to can only narrow within scope, not widen
+        const relationsMap: Record<string, { relationScope?: Scope }> = (() => {
+          try { return JSON.parse(localStorage.getItem('nighton_relations') || '{}'); } catch { return {}; }
+        })();
+        const getRelationOf = (aid: string): Scope => {
+          const upper = String(aid).toUpperCase();
+          const u = usersRef.current.find(x => (x as any).accountId === upper);
+          return (relationsMap[upper]?.relationScope as Scope) || (u?.relationScope || Scope.PUBLIC);
+        };
+        const isAllowedForScope = (aid: string): boolean => {
+          const rel = getRelationOf(aid);
+          if (scope === Scope.PUBLIC) return true;
+          if (scope === Scope.COMMUNITY) return rel === Scope.COMMUNITY || rel === Scope.PRIVATE;
+          return rel === Scope.PRIVATE; // PRIVATE
+        };
+        const prunedRecipients = (recipientUserIds || [])
+          .map(id => String(id).toUpperCase())
+          .filter(isAllowedForScope);
         await supabase
           .from('users')
           .upsert({
@@ -396,7 +414,7 @@ const App: React.FC = () => {
             status: 'FREE',
             available_from: time,
             share_scope: scope,
-            visible_to: (recipientUserIds || []).map(id => String(id).toUpperCase()),
+            visible_to: prunedRecipients,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'account_id' });
         // Keep nighton_settings defaults as-is; only sync shared_with list to remember recipients
@@ -405,7 +423,7 @@ const App: React.FC = () => {
           settings.defaultStatus || 'BUSY',
           (settings?.defaultTime as any) || null,
           (settings?.defaultShareScope as any) || null,
-          (recipientUserIds || []).map(id => String(id).toUpperCase())
+          prunedRecipients
         );
       } catch {}
     })();
