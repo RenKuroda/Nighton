@@ -614,6 +614,10 @@ const App: React.FC = () => {
               rStatus: r.status,
               rTime: r.available_from,
               rUpdatedAt: r.updated_at,
+              listLen: Array.isArray(list) ? list.length : 0,
+              isVisibleByScope,
+              recipientGate,
+              isVisible,
             });
           } catch {}
           const isVisibleByScope = !incomingScope || incomingScope === 'PUBLIC' || (incomingScope === 'COMMUNITY' && (viewerRelation === Scope.COMMUNITY || viewerRelation === Scope.PRIVATE)) || (incomingScope === 'PRIVATE' && viewerRelation === Scope.PRIVATE);
